@@ -43,6 +43,17 @@ namespace CrazyflieClient
             public ushort isArmed;
         }
 
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct CrtpCommanderHoverPacket
+        {
+            public byte header;
+            public byte type;
+            public float vx;           // m/s in the body frame of reference
+            public float vy;           // ...  
+            public float yawrate;      // deg/s
+            public float zDistance;    // m in the world frame of reference
+        }
+
         // This is the GUID for the CRTP GATT service
         private static Guid crtpServiceGuid =
             new Guid("00000201-1c7f-4f9e-947b-43b7c00a9a08");
@@ -192,6 +203,51 @@ namespace CrazyflieClient
             packet.thrust = thrust;
             packet.isSelfLevelEnabled = isSelfLevelEnabled;
             packet.isArmed = isArmed;
+
+            // Marshal the structure into a byte array
+            int size = Marshal.SizeOf(packet);
+            byte[] arr = new byte[size];
+            IntPtr ptr = Marshal.AllocHGlobal(size);
+            Marshal.StructureToPtr(packet, ptr, true);
+            Marshal.Copy(ptr, arr, 0, size);
+            Marshal.FreeHGlobal(ptr);
+            
+            // Write the packet to the GATT characteristic
+            // Can use the basic characteristic since the payload is always less than 20
+            GattCommunicationStatus status = await crtpChar.WriteValueAsync(
+                        arr.AsBuffer(),
+                        GattWriteOption.WriteWithResponse);
+
+            if (GattCommunicationStatus.Unreachable == status)
+            {
+                // TODO: error reporting
+                return;
+            }
+            else
+            {
+                return;
+            }
+        }
+        
+        // 
+        // Summary:
+        //      Writes a Hover commander packet (roll, pitch, yaw, thrust, armed) OTA via BLE
+        public async Task WriteHoverCommanderPacket(
+            float vx,
+            float vy,
+            float yawrate,
+            float zDistance)
+        {
+            CrtpCommanderHoverPacket packet;
+
+            // Header is always 0x70 for generic commander packets
+            // (Port 7, link 0, chan 0)
+            packet.header = 0x70;
+            packet.type = 0x05; // Type 0x05 is Hover
+            packet.vx = vx;
+            packet.vy = vy;
+            packet.yawrate = yawrate;
+            packet.zDistance = zDistance;
 
             // Marshal the structure into a byte array
             int size = Marshal.SizeOf(packet);

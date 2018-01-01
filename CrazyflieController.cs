@@ -106,13 +106,19 @@ namespace CrazyflieClient
                 //    (float)(axes.yaw * maxYawRate),
                 //    (ushort)(axes.thrust * maxThrustPercent * MaxThrust));
 
-                await bthCrtp.WriteCppmCommanderPacket(
-                    (ushort)((axes.roll * 500) + 1500),
-                    (ushort)((axes.pitch * 500) + 1500),
-                    (ushort)((axes.yaw * 500) + 1500),
-                    (ushort)((axes.thrust * 1000 * maxThrustPercent) + 1000),
-                    (ushort)(axes.isSelfLevelEnabled ? 2000 : 1000),
-                    (ushort)(axes.isArmed ? 2000 : 1000));
+                //await bthCrtp.WriteCppmCommanderPacket(
+                //    (ushort)((axes.roll * 500) + 1500),
+                //    (ushort)((axes.pitch * 500) + 1500),
+                //    (ushort)((axes.yaw * 500) + 1500),
+                //    (ushort)((axes.thrust * 1000 * maxThrustPercent) + 1000),
+                //    (ushort)(axes.isSelfLevelEnabled ? 2000 : 1000),
+                //    (ushort)(axes.isArmed ? 2000 : 1000));
+
+                await bthCrtp.WriteHoverCommanderPacket(
+                    (float)axes.pitch,
+                    (float)axes.roll,
+                    0.0f,
+                    0.25f);
             }
         }
     }
