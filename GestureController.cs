@@ -24,6 +24,17 @@ namespace CrazyflieClient
         // Summary:
         //      Variable for storing the last observed gesture position offset
         private Vector3 lastGestureOffset;
+
+
+
+        //
+        // Summary:
+        //      Variable for storing the last observed vertical position to maintain
+        //      height between gestures.
+        private float lastVerticalPosition;
+        private const float maxVerticalPosition = 1.0f; // 1m
+        private const float minVerticalPosition = 0.05f;// 5cm
+
         
         //
         // Summary:
@@ -45,6 +56,10 @@ namespace CrazyflieClient
   
         public GestureController()
         {
+            // Start out at the minimum vertical position
+            lastVerticalPosition = minVerticalPosition;
+
+
             spatialLocator = SpatialLocator.GetDefault();
 
             gestureRecognizer = new SpatialGestureRecognizer(
@@ -65,6 +80,9 @@ namespace CrazyflieClient
         //      Helper to clear the state of the setpoints and tell the copter to disarm
         private void ClearSetpointsAndDisarm()
         {
+            // Store the vertical position
+            lastVerticalPosition = ComputeVerticalPosition();
+
             lastGestureOffset.X = 0;
             lastGestureOffset.Y = 0;
             lastGestureOffset.Z = 0;
@@ -121,6 +139,13 @@ namespace CrazyflieClient
             isArmed = !isArmed;
         }
 
+        private float ComputeVerticalPosition()
+        {
+            return Clamp(lastVerticalPosition + (lastGestureOffset.Y / gestureRangeScale),
+                minVerticalPosition,
+                maxVerticalPosition);
+        }
+
         // Summary:
         //      Helper for clamping a value to a specified min and max
         private float Clamp(float value, float min, float max)
@@ -139,7 +164,19 @@ namespace CrazyflieClient
             axes.roll = Clamp(lastGestureOffset.X / gestureRangeScale, -1, 1);
             axes.pitch = -1 * Clamp(lastGestureOffset.Z / gestureRangeScale, -1, 1); // Z is inverted
             axes.yaw = 0; // No yaw support
-            axes.thrust = Clamp(lastGestureOffset.Y / gestureRangeScale, 0, 1);
+
+
+            // TEMP: Hard code thrust to be the absolute z position.
+            // 
+            // Z position should remain constant between gestures. Treat the current gesture offset as a delta
+            // applied to the last known fixed z position. When a gesture is completed, update the fixed z delta.
+            // The actual z position should be clamped within a fixed range, as well.
+
+            axes.thrust = ComputeVerticalPosition();
+
+            
+
+
             axes.isSelfLevelEnabled = isSelfLevelEnabled;
             axes.isArmed = isArmed;
 

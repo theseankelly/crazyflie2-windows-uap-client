@@ -114,11 +114,25 @@ namespace CrazyflieClient
                 //    (ushort)(axes.isSelfLevelEnabled ? 2000 : 1000),
                 //    (ushort)(axes.isArmed ? 2000 : 1000));
 
+                
+                // How should z control work?
+                // - when the connection starts, it should jump to a known starting point
+                // - z-axis gestures should raise and lower the crazyflie
+                // - when gestures stop, the crazyflie should hold vertical position
+
+                // How to do this
+                // - Have a local variable for the z-pos
+                // - apply 
+                // - do this all in the flight controller.
+
+                // So, GetFlightControlAxes should return a fixed z position
+                // - the starting point of the fixed position should be whatever the last position was when the gesture ended
+
                 await bthCrtp.WriteHoverCommanderPacket(
-                    (float)axes.pitch,
-                    (float)axes.roll,
+                    (float)axes.pitch * 2.0f,
+                    (-1.0f) * (float)axes.roll * 2.0f, // roll seems inverted in this mode, don't know why.
                     0.0f,
-                    0.25f);
+                    (float)axes.thrust);
             }
         }
     }
